@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "outDir": "dist",
+        "target": "es2018", // Requires node 10.3 or newer
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "lib": [
+            "es2018"
+        ],
+        "noEmitOnError": true,
+        "forceConsistentCasingInFileNames": true,
+        // "noUnusedLocals": true,
+        // "noUnusedParameters": true,
+        // "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "strict": false, // noImplicitAny noImplicitThis alwaysStrict strictBindCallApply strictNullChecks strictFunctionTypes strictPropertyInitialization
+        "removeComments": true,
+        "sourceMap": true
+    },
+    "include": [
+        "index.ts"
+    ]
+}
