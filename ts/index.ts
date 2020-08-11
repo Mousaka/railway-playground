@@ -70,3 +70,78 @@ pipe(
     )
   )
 );
+
+// type Json = {
+//   email: string;
+//   phone: string;
+// };
+
+type Json = t.TypeOf<typeof Json>;
+const Json = t.type({
+  email: t.string,
+  phone: t.string,
+});
+
+type Email = string;
+type Phone = string;
+
+type Contact = {
+  email: Email;
+  phone: Phone;
+};
+
+const input = `
+{
+    "email": "whatever@mailemetrash.com",
+    "phone": "1234567000"
+}
+`;
+
+const todo = {} as E.Either<string, Json>;
+
+const parseJson = (raw: string): E.Either<string, Json> => todo;
+
+const validateEmail = (json: Json): E.Either<string, Json> => todo;
+
+const validatePhone = (json: Json): E.Either<string, Json> => todo;
+
+const createContact = (json: Json): Contact => ({
+  email: json.email,
+  phone: json.phone,
+});
+
+const jsonStringToContact = (rawJson: string): E.Either<string, Contact> =>
+  pipe(
+    rawJson,
+    parseJson,
+    E.chain(validateEmail),
+    E.chain(validatePhone),
+    E.map(createContact)
+  );
+
+const loop = (asd) => {
+  let input = [1, 2, 3];
+
+  let sum = 0;
+
+  for (let i = 0; i < input.length; i++) {
+    sum += input[i];
+  }
+
+  return sum;
+};
+
+//   E.map(createContact)(
+//     E.chain(validatePhone)(E.chain(validateEmail)(parseJson(rawJson)))
+//   );
+
+/*
+    Result         == E.Either
+    Ok value       == Right value
+    Err "Boom"     == Left "Boom"
+
+    Result.map     == E.map
+    Result.andThen == E.chain
+
+   a |> b |> c            == pipe(a, b, c)
+*/
