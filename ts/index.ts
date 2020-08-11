@@ -2,7 +2,7 @@ import * as t from "io-ts";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/lib/Either";
 import * as A from "fp-ts/lib/Array";
-import { pipe } from "fp-ts/lib/function";
+import { pipe, flow } from "fp-ts/lib/function";
 import { PathReporter } from "io-ts/lib/PathReporter";
 import got, { Response } from "got";
 
@@ -19,6 +19,7 @@ const getRawPeopleSite: TE.TaskEither<Error, string> = pipe(
 );
 
 type AnagramResponse = t.TypeOf<typeof AnagramResponse>;
+
 const AnagramResponse = t.type({
   best: t.array(t.string),
 });
@@ -38,11 +39,12 @@ const getBestAnagram = (
     TE.map((res) => res.body),
     TE.chain((body: unknown) =>
       pipe(
-        AnagramResponse.decode(body),
-        TE.fromEither,
-        TE.mapLeft(
+        body,
+        AnagramResponse.decode,
+        E.mapLeft(
           (err) => new Error(PathReporter.report(E.left(err)).join(", "))
-        )
+        ),
+        TE.fromEither
       )
     ),
     TE.map((resp) => ({ name: name, anagram: resp.best[0] }))
@@ -53,21 +55,34 @@ const namesRegex = /<span class=\"name u-link-color\">(.*?)</g;
 const findNames = (raw: string): string[] =>
   raw.match(namesRegex).map((el) => el.split(">")[1].split("<")[0]);
 
-pipe(
+const firstName = (names) => names[0];
+
+const workflow = pipe(
   getRawPeopleSite,
+  //   TE.map(flow(findNames, firstName)),
   TE.map(findNames),
   TE.map((names) => names.slice(0, 5)), //pick first 5 names
-  //   TE.map((names) => names[0]), //pick first name
   TE.map((names) => pipe(names, A.map(getBestAnagram))),
-  TE.chain(A.array.sequence(TE.taskEither))
+  (a) => a,
+  TE.chain(A.array.sequence(TE.taskEither)),
+
+  (a) => a
+  //   TE.map((raw) => pipe(raw, findNames, firstName)),
   //   TE.chain(getBestAnagram)
-)().then((res) =>
-  pipe(
-    res,
-    E.fold(
-      (err) => console.log("Error", err),
-      (anagrams) => console.log(anagrams)
-    )
+);
+
+workflow().then(
+  // (res) => {
+  //   switch (res._tag) {
+  //     case "Left":
+  //       return console.log("Error", res.left);
+  //     case "Right":
+  //       return console.log(res.right);
+  //   }
+  // }
+  E.fold(
+    (err) => console.log("Error", err),
+    (anagrams) => console.log(anagrams)
   )
 );
 
@@ -110,32 +125,32 @@ const createContact = (json: Json): Contact => ({
   phone: json.phone,
 });
 
-const jsonStringToContact = (rawJson: string): E.Either<string, Contact> =>
+const fetch = (url: string): TE.TaskEither<string, string> => {
+  return {} as TE.TaskEither<string, string>;
+};
+
+const jsonStringToContact = (raw: string): E.Either<string, Contact> =>
   pipe(
-    rawJson,
+    raw,
     parseJson,
     E.chain(validateEmail),
     E.chain(validatePhone),
     E.map(createContact)
   );
 
-const loop = (asd) => {
-  let input = [1, 2, 3];
-
-  let sum = 0;
-
-  for (let i = 0; i < input.length; i++) {
-    sum += input[i];
-  }
-
-  return sum;
-};
+const fetchAndjsonStringToContact = (
+  url: string
+): TE.TaskEither<string, Contact> =>
+  pipe(fetch(url), TE.chain(flow(jsonStringToContact, TE.fromEither)));
 
 //   E.map(createContact)(
 //     E.chain(validatePhone)(E.chain(validateEmail)(parseJson(rawJson)))
 //   );
 
 /*
+https://ellie-app.com/7wm7ZfVySLRa1
+
+http://www.anagramica.com/api
     Result         == E.Either
     Ok value       == Right value
     Err "Boom"     == Left "Boom"
@@ -144,4 +159,7 @@ const loop = (asd) => {
     Result.andThen == E.chain
 
    a |> b |> c            == pipe(a, b, c)
+
+   Maybe           == Option
+   Maybe.map       == O.map
 */
